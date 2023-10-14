@@ -381,13 +381,55 @@ $ docker version
 
 **`docker [system] info`** 를 실행해서 출력 정보를 하나씩 살펴본다. system 은 생략할 수 있다.
 
+```
+$ docker [system] info
+...
+# JSON 파일 형식으로 출력
+$ docker info --format '{{json .}}'
+```
+
 **`docker system df`** 를 실행해서 도커 시스템이 사용하는 디스크 사용량에 대한 현재 상태를 조회할 수 있다.
+
+```
+$ docker system df
+
+# 세부 정보 확인
+$ docker system df -v
+```
 
 회수 가능한 공간 확보는 **`docker system prune`** 명령을 이용하여 제거할 수 있다.
 
+```
+$ docker system prune
+```
+
 **`docker system events`** 를 실행해서 도커 서버에서 발생하는 도커 관련 이벤트 정보를 표시하는 명령이다. 해당 명령어는 도커 관련 명령이 실행되지 않는 동안에는 아무것도 출력이 되지 않는다. 터미널을 두개 띄워놓고 한쪽에는 Nginx 웹 애플리케이션을 조작하고, 다른 한쪽에는 도커 명령이 실행될 때마다 내부적으로 발생하는 이벤트 기록이 나타남을 확인 할 수 있다.
 
+```
+# 터미널 1
+$ docker system events
+```
+
+```
+# 터미널 2, 도커를 이용해 Nginx 조작. 이때 터미널 1에는 도커 명령이 실행될 때마다 이벤트 기록이 나타남.
+$ docker run -itd -p 80:80 --name=webapp nginx
+```
+
 많은 정보가 기록되기에 식별하기가 쉽지 않다. 이벤트 옵션 필터(--filter)를 통해 원하는 정보만 추출해서 볼 수 있다. docker events 는 롤링 로그이며, 최대 1000개의 이벤트를 보유한다.
+
+```
+# --filter 옵션을 이용하여 식별
+$ docker system events --filter 'type=image'
+$ docker system events --filter 'event=stop'
+$ docker system events --filter 'container=webapp'
+$ docker system events --filter 'container=webapp' --filter 'event=stop'
+
+# 지난 24시간 동안의 로그를 출력
+$ docker system events --since 24h
+
+# JSON 형식으로 로그 출력
+$ docker system events --format '{{json .}}'
+```
 
 도커 엔진이 안정적으로 설치되면 기본적으로 구성되는 요소는 도커 데몬이다.
 
