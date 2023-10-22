@@ -621,3 +621,90 @@ $ docker pull gcr.io/google-samples/hello-app:1.0
 ```
 
 <br>
+
+도커 오브젝트(이미지, 컨테이너 등)에 대한 세부 정보 조회를 위해 docker image inspect, docker image history, 물리적으로 호스트 운영체제에 저장된 영역을 이용한다.
+
+**docker inspect** 에 대해 알아본다.
+
+```
+docker image inspect [OPTIONS] IMAGE [IMAGE...]
+```
+
+이 명령의 출력 결과는 JSON 언어 형태로 출력되는 정보가 많기 때문에 포맷 옵션을 이용하여 원하는 정보만 출력할 수 있다.
+
+docker image inspect 명령 옵션은 아래와 같다.
+
+- --format, -f: JSON 형식의 정보 중 지정한 형식의 정보만 출력할 수 있고, {} 중괄호 형식과 대소문자에 유의해야한다.
+
+출력되는 세부 내용 중 몇가지 주요 정보는 다음과 같다.
+
+- image ID: 'Id'
+
+- 생성일: 'Created'
+
+- Docker 버전: 'DockerVersion'
+
+- CPU 아키텍처: 'Architecture'
+
+- 이미지 다이제스트 정보: 'RootFS'
+
+- 이미지 레이어 저장 정보: 'GraphDriver'
+
+테스트하기 위해 아파치 웹 서비스를 할 수 있는 httpd 도커 이미지를 다운로드해 본다.
+
+```
+# docker search 수행전 hub.docker.com 에 가입한 본인 계정으로 docker login 을 먼저 수행하고 조회
+$ docker search httpd
+...
+
+# httpd 최신 버전으로 다운로드
+$ docker pull httpd:latest
+...
+
+# 다운로드한 이미지 조회
+$ docker images
+...
+
+# 다운로드한 이미지 세부 정보 조회
+$ docker images inspect httpd
+...
+
+# 계층 형식으로 되어 있어 하위 정보 조회 시 .상위[.하위] 방식으로 조회
+$ docker image inspect --format="{{ .RepoTags}}" httpd
+
+$ docker image inspect --format="{{ .Os}}" httpd
+
+$ docker image inspect --format="{{ .ContainerConfig.Env}}" httpd
+
+$ docker image inspect --format="{{ .RootFS.Layers}}" httpd
+
+```
+
+다음은 **docker image history** 를 이용해 조회해 본다.
+
+```
+docker image history [OPTIONS] IMAGE
+```
+
+이 명령을 통해 현재 이미지 구성을 위해 사용된 레이블 정보와 각 레이어의 수행 명령, 크기 등을 조회할 수 있다. 아래는 이미지를 구성하고 있는 레이어와 실행 정보에 관련된 내용이다.
+
+```
+$ docker image history httpd
+...
+```
+
+출력 결과중 CREATED BY 열을 보면 특정 이미지를 구성하기 위해 사용된 명령과 환경 설정 정보 등을 볼 수 있다. 정보 중 용량을 가지고 있는 라인이 레이어다. CMD, EXPOSE, ENV, WORKDIR 등의 명령을 통해 베이스 이미지에 필요한 설정 정보를 결합하여 새로운 이미지를 만들게 된다. 이러한 메타 데이터 관련 명령은 Dockerfile 을 통해 배우게 된다.
+
+이미지가 다운로드되는 과정을 보면, 처음 다운로드한 데비안 리눅스와 달리 아파치 웹 서버 이미지인 httpd 는 다운로드한 레이어 수가 더 많은 것을 볼 수 있다.
+
+참고로, 출력된 다이제스트 값은 도커 허브에서 관리하는 다이제스트 값이 아닌 로컬에 다운로드될 때 생기는 레이어들의 디스트리뷰션 아이디다.
+
+간단히 표현하면 다음과 같은 구조다.
+
+1. 도커 이미지 구조의 기본 운영체제 레이어들을 쌓는다.
+
+2. 운영체제 베이스 이미지 위에 아파치 웹 서버를 설치한 레이어를 올린다.
+
+3. 아파치 웹 서비스에 필요한 리소스 정보 및 환경 정보가 포함된 레이어를 올린다. 이렇게 구성된 이미지는 불변의 읽기 전용 레이어들의 집합 구조인 유니언 파일 시스템이다. (이미지 레이어는 불변이지만, 관리자 권한으로 호스트 운영체제에서 각 레이어에 접근하게 되면 파일 생성 및 변경이 가능)
+
+4. 도커 이미지를 실행하면 여러 개의 컨테이너를 구동할 수 있다. 각각의 컨테이너에서 발생한 모든 변경 정보를 저장하기 위해 읽고-쓰기 레이어를 두고 저장하게 된다.
