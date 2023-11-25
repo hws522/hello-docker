@@ -778,3 +778,92 @@ $ ls
 내려받은 이미지에 대한 레이어 구조에 대해 알아봤다. 여러 레이어로 구성된 이미지는 몇 개의 컨테이너를 실행해도 별도의 읽고 쓰기가 가능한 컨테이너 레이어가 상위에 추가되므로 하위 이미지 레벨의 레이어에는 영향을 주지 않으면서 동작하는 것이 컨테이너 가상화의 특징 중 하나다.
 
 <br>
+
+도커 태그(tag)는 원본 이미지에 참조 이미지 이름을 붙이는 명령이다. 사용법은 다음과 같다.
+
+> docker tag 원본 이미지[:태그] 참조 이미지[:태그]
+
+태그 설정은 단순히 새로운 참조명을 붙이는 작업이므로 이미지 ID 는 변경되지 않는다. 어떤 경우에 태그 설정을 하는지 알아본다.
+
+```
+# 이미지 ID에 세부 정보(OS, 버전 등)를 붙여 태그 지정.
+$ docker images
+REPOSITORY   TAG       IMAGE ID       CREATED        SIZE
+httpd        latest    c18831e834fc   5 weeks ago    195MB
+nginx        latest    12ef77b9fab6   6 weeks ago    192MB
+debian       latest    48f404e78da4   6 weeks ago    139MB
+busybox      latest    fc9db2894f4e   4 months ago   4.04MB
+
+$ docker image tag c18831e834fc debian-httpd:1.0
+$ docker images
+REPOSITORY     TAG       IMAGE ID       CREATED        SIZE
+debian-httpd   1.0       c18831e834fc   5 weeks ago    195MB
+httpd          latest    c18831e834fc   5 weeks ago    195MB
+nginx          latest    12ef77b9fab6   6 weeks ago    192MB
+debian         latest    48f404e78da4   6 weeks ago    139MB
+busybox        latest    fc9db2894f4e   4 months ago   4.04MB
+
+
+# 이미지 이름[:태그]에 세부 정보(OS, 버전 등)를 붙여 태그 지정.
+$ docker image tag httpd:latest debian-httpd:2.0
+$ docker images
+REPOSITORY     TAG       IMAGE ID       CREATED        SIZE
+debian-httpd   1.0       c18831e834fc   5 weeks ago    195MB
+debian-httpd   2.0       c18831e834fc   5 weeks ago    195MB
+httpd          latest    c18831e834fc   5 weeks ago    195MB
+nginx          latest    12ef77b9fab6   6 weeks ago    192MB
+debian         latest    48f404e78da4   6 weeks ago    139MB
+busybox        latest    fc9db2894f4e   4 months ago   4.04MB
+
+# 도커 허브와 같은 레지스트리에 업로드하는 경우 저장소명과 함꼐 태그 지정.
+$ docker image tag httpd:latest [본인 아이디]/httpd:3.0
+$ docker images
+REPOSITORY     TAG       IMAGE ID       CREATED        SIZE
+httpd          latest    c18831e834fc   5 weeks ago    195MB
+hws522/httpd   3.0       c18831e834fc   5 weeks ago    195MB
+debian-httpd   1.0       c18831e834fc   5 weeks ago    195MB
+debian-httpd   2.0       c18831e834fc   5 weeks ago    195MB
+nginx          latest    12ef77b9fab6   6 weeks ago    192MB
+debian         latest    48f404e78da4   6 weeks ago    139MB
+busybox        latest    fc9db2894f4e   4 months ago   4.04MB
+
+# 알기 쉬운 이름으로 설정하고자 하는 경우 태그 지정.
+$ docker image tag httpd webserver:4.0
+$ docker images
+REPOSITORY     TAG       IMAGE ID       CREATED        SIZE
+debian-httpd   1.0       c18831e834fc   5 weeks ago    195MB
+debian-httpd   2.0       c18831e834fc   5 weeks ago    195MB
+httpd          latest    c18831e834fc   5 weeks ago    195MB
+webserver      4.0       c18831e834fc   5 weeks ago    195MB
+hws522/httpd   3.0       c18831e834fc   5 weeks ago    195MB
+nginx          latest    12ef77b9fab6   6 weeks ago    192MB
+debian         latest    48f404e78da4   6 weeks ago    139MB
+busybox        latest    fc9db2894f4e   4 months ago   4.04MB
+
+# 도커 허브에 가입 후 생성한 본인 아이디(hws522) 에 http 라는 저장소와 3.0 태그가 지정되어 업로드 됨.
+
+# 터미널에서 docker login 을 통해 도커 허브에 원격 접속(접속 해제는 docker logout)
+$ docker login
+Username: 본인 아이디 입력
+Password: 본인 암호 입력
+...
+Login Succeeded
+
+$ docker push [본인아이디]/httpd:3.0
+The push refers to repository [docker.io/hws522/httpd]
+99bf1d462439: Mounted from library/httpd
+d904146ab7a0: Mounted from library/httpd
+838b5c76c02b: Mounted from library/httpd
+e245681d1f55: Mounted from library/httpd
+32f2ee38f285: Mounted from library/httpd
+3.0: digest: sha256:a8db96a1de15bc0a63b9c591dfecadf2d55ed3aebe8de9410f2159ed6bb6cb2b size: 1366
+
+# 본인의 도커 허브 저장소에 업로드된 이미지를 내려받을 수 있다.
+$ docker pull hws522/httpd:3.0
+3.0: Pulling from hws522/httpd
+Digest: sha256:a8db96a1de15bc0a63b9c591dfecadf2d55ed3aebe8de9410f2159ed6bb6cb2b
+Status: Image is up to date for hws522/httpd:3.0
+docker.io/hws522/httpd:3.0
+```
+
+도커 허브에서 본인이 업로드한 이미지를 확인해 본다.
