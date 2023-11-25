@@ -867,3 +867,54 @@ docker.io/hws522/httpd:3.0
 ```
 
 도커 허브에서 본인이 업로드한 이미지를 확인해 본다.
+
+일반적으로 본인이 베이스 이미지에 특정 애플리케이션을 서비스와 코드 등을 포함해 컨테이너로 실행한 경우, `docker commit` 명령을 통해 컨테이너를 이미지로 저장할 수 있다.
+
+이렇게 저장된 이미지를 본인의 도커 허브 저장소에 업로드하고 지속적으로 활용할 수도 있고, 팀 간 이미지 공유도 할 수 있다.
+
+도커 허브 사이트에서 제공하는 저장소에 호스트에서 생성한 이미지 및 보유하고자 하는 이미지를 업로드하려면 `docker login` 명령을 통해 호스트에서의 접속이 이루어져야 한다. 도커 허브 사이트 접속은 기본적으로 두 가지 방법을 사용할 수 있다.
+
+1. ### docker login
+
+   ```
+   $ docker login
+   Log in with your Docker ID or email address to push and pull images from Docker Hub. If you don't have a Docker ID, head over to https://hub.docker.com/ to create one.
+   You can log in with your password or a Personal Access Token (PAT). Using a limited-scope PAT grants better security and is required for organizations using SSO. Learn more at https://docs.docker.com/go/access-tokens/
+
+   Username:
+   Password:
+   Login Succeeded
+   ```
+
+2. ### hub.docker.com / access token
+
+   1. hub.docker.com 에 로그인한다.
+
+   2. 본인 계정을 클릭하면 [Account settings] 가 나온다.
+
+   3. 좌측 메뉴 중 [Security] 를 선택한다.
+
+   4. [Access Tokens] 의 [New Access Token] 을 선택한다.
+
+   5. 임의의 값을 입력하면 사용방법이 제공된다.
+
+   6. 복사된 액세트 토큰을 사용해본다.
+
+      ```
+      $ vi .access_token
+      만들어놓은 토큰
+
+      # 별도의 암호 입력 없이 액세스 토큰을 이용해 로그인된다.
+      $ cat .access_token | docker login --username 본인ID --password-stdin
+      ...
+
+      # 경고 메세지에 제시된 파일을 열어 확인해본다.
+      $ cat /.../.docker/config.json
+      ...
+      ```
+
+   7. 생성된 액세스 토큰의 [Edit] 를 선택해 보면 마지막 사용 메뉴가 [Active] 로 되어 있다.
+
+   8. 이 값을 [Inactive] 로 변경 후 재접속 해보면 접속 거부됨을 확인할 수 있다.
+
+<br>
