@@ -918,3 +918,108 @@ docker.io/hws522/httpd:3.0
    8. 이 값을 [Inactive] 로 변경 후 재접속 해보면 접속 거부됨을 확인할 수 있다.
 
 <br>
+
+`docker image save` 명령은 도커 원본 이미지의 레이어 구조까지 포함한 복제를 수행하여 확장자 `tar(Tape Archiver)` 파일로 이미지를 저장한다.
+
+- 도커 허브로부터 이미지를 내려받아 내부망으로 이전하는 경우
+
+- 신규 애플리케이션 서비스를 위해 `Dockerfile` 로 새롭게 생성한 이미지를 저장 및 배포해야 하는 경우
+
+- 컨테이너를 완료(commit)하여 생성한 이미지를 저장 및 배포해야 하는 경우
+
+- 개발 및 수정한 이미지 등
+
+네트워크 제한 등으로 도커 허브를 이용하지 못하는 경우 이미지 이전과 배포를 위해 로컬에 저장된 이미지를 파일로 저장하거나 불러올 수 있다.
+
+```
+# 도커 이미지를 tar 파일로 저장.
+$ docker image save [옵션] <파일명> [image명]
+
+# docker save 로 저장한 tar 파이을 이미지로 불러옴.
+$ docker image load [옵션]
+```
+
+아래는 이미지를 다운로드해서 파일로 저장하고 불러오는 과정이다.
+
+```
+# mysql:latest 이미지를 다운로드 하고 확인한다
+$ docker pull mysql:latest
+$ docker images
+REPOSITORY     TAG       IMAGE ID       CREATED        SIZE
+mysql          latest    5d2fb452c483   4 weeks ago    622MB
+hws522/httpd   3.0       c18831e834fc   5 weeks ago    195MB
+debian-httpd   1.0       c18831e834fc   5 weeks ago    195MB
+debian-httpd   2.0       c18831e834fc   5 weeks ago    195MB
+httpd          latest    c18831e834fc   5 weeks ago    195MB
+webserver      4.0       c18831e834fc   5 weeks ago    195MB
+nginx          latest    12ef77b9fab6   6 weeks ago    192MB
+debian         latest    48f404e78da4   6 weeks ago    139MB
+busybox        latest    fc9db2894f4e   4 months ago   4.04MB
+
+# docker image save 명령을 이용해 이미지를 tar 파일로 저장한다
+$ docker image save mysql:latest > test-mysql.tar
+$ ls -lh test-mysql.tar
+-rw-r--r--  1 user  user   608M 11 26 17:29 test-mysql.tar
+
+# tar 명령의 옵션 중 tvf(t(list), v(verbose), f(file))를 이용해 묶인 파일 내용을 확인할 수 있다. 이미지 레이어들의 다이제스트값으로 만들어진 디렉터리 파일이다.
+$ tar tvf test-mysql.tar
+drwxr-xr-x  0 0      0           0 10 25 01:24 006018549fe46f72d6f5c313afeac1557962aa5a2ea78a84c3ea9f10db14ff71/
+-rw-r--r--  0 0      0           3 10 25 01:24 006018549fe46f72d6f5c313afeac1557962aa5a2ea78a84c3ea9f10db14ff71/VERSION
+-rw-r--r--  0 0      0         477 10 25 01:24 006018549fe46f72d6f5c313afeac1557962aa5a2ea78a84c3ea9f10db14ff71/json
+-rw-r--r--  0 0      0        6656 10 25 01:24 006018549fe46f72d6f5c313afeac1557962aa5a2ea78a84c3ea9f10db14ff71/layer.tar
+drwxr-xr-x  0 0      0           0 10 25 01:24 240ad7f04d4be32670bfd2f8d30e6ae1edee95a3eaebc2652cb0f4d66376220d/
+-rw-r--r--  0 0      0           3 10 25 01:24 240ad7f04d4be32670bfd2f8d30e6ae1edee95a3eaebc2652cb0f4d66376220d/
+...
+
+# 다시 불러오는 실습을 위해 이미지 삭제 후 조회
+$ docker image rm mysql:latest
+$ docker images
+
+# docker image load 명령을 이용해 파일로 만들어진 이미지 tar 파일 내용을 불러온다
+$ docker image load < test-mysql.tar
+03486b619b8a: Loading layer [==================================================>]  121.1MB/121.1MB
+3dd67e0995d4: Loading layer [==================================================>]  11.26kB/11.26kB
+ab43e2b85120: Loading layer [==================================================>]  2.406MB/2.406MB
+57131b673ab1: Loading layer [==================================================>]   14.3MB/14.3MB
+b8eecd8e6843: Loading layer [==================================================>]  6.656kB/6.656kB
+dd5e71bdf24c: Loading layer [==================================================>]  3.072kB/3.072kB
+5b5efa882b3f: Loading layer [==================================================>]  196.9MB/196.9MB
+855ace31b698: Loading layer [==================================================>]  3.072kB/3.072kB
+60881a8cc619: Loading layer [==================================================>]  302.6MB/302.6MB
+484a9239a160: Loading layer [==================================================>]  17.41kB/17.41kB
+Loaded image: mysql:latest
+
+# 도커 허브로부터 내려받은 이미지처럼 조회가 가능하다
+$ docker images
+```
+
+tar 파일로 가져온 이미지를 불러오는 다른 방법으로 `docker import` 를 이용할 수 있다. 로컬에 저장된 tar 파일을 기반으로 새롭게 지정한 이미지명과 태그로 이미지 등록이 가능하다.
+
+```
+$ cat test-mysql.tar | docker import - mysql:1.0
+sha256:8de74d9b3a4c8de77eb16f1b3d64502f5eee3a6742228ef4367af1c0ff0f8295
+
+$ docker images
+```
+
+만약 tar 파일의 용량을 줄이고 싶다면 docker image save 에 gzip 옵션을 추가할 수 있다.
+
+```
+$ docker image save mysql:latest | gzip > test-mysqlzip.tar.gz
+$ ls -lh test-mysqlzip.tar.gz
+-rw-r--r--  1 user  user   162M 11 26 17:40 test-mysqlzip.tar.gz
+
+# 약 500MB 정도 용량이 감소된 것을 확인할 수 있다. 불러오는 방법은 동일하다.
+```
+
+셸 스크립트 변수 방식을 이용하여 모든 이미지를 하나의 파일로 저장할 수 있다.
+
+```
+$ docker image save -o all_image.tar $(docker image ls -q)
+$ ls -lh all_image.tar
+-rw-------  1 user  user   1.6G 11 26 17:43 all_image.tar
+```
+
+도커는 `docker image save` 와 같이 이미지를 파일로 관리하는 몇 가지 다른 방식이 있다.
+
+컨테이너를 파일로 관리하는 `docker export/import` 와 컨테이너를 이미지로 생성하는 `docker commit` 도 제공한다.
