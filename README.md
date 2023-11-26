@@ -1023,3 +1023,90 @@ $ ls -lh all_image.tar
 도커는 `docker image save` 와 같이 이미지를 파일로 관리하는 몇 가지 다른 방식이 있다.
 
 컨테이너를 파일로 관리하는 `docker export/import` 와 컨테이너를 이미지로 생성하는 `docker commit` 도 제공한다.
+
+<br>
+
+**도커 이미지 삭제**
+
+도커 허브를 통해 다운로드한 이미지는 종류에 따라 용량이 다르다. 이미지를 계속 다운로드하게 되면 로컬 서버의 저장 용량을 많이 차지하여 공간문제를 야기하기도 한다. 이런 문제를 해결하기 위해 `docker image save` 를 통해 이미지를 백업하거나 주기적으로 불필요한 이미지는 삭제하는 것이 좋다.
+
+하나 이상의 도커 이미지를 삭제하는 방법은 다음과 같다. 정식 명령은 `docker image rm` 이고, 단축 명령으로 `docker rmi` 를 제공한다.
+
+```
+$ docker image rm [옵션] {이미지 이름[:태그] | 이미지 ID}
+
+$ docker rmi [옵션] {이미지 이름[:태그] | 이미지 ID}
+```
+
+도커 이미지는 현재 사용 중인 컨테이너가 없으면 바로 삭제된다.
+
+태그가 있는 이미지 원본은 태그된 이미지와 상관없이 삭제할 수 있다.
+
+```
+# 이미지 삭제 시 latest 버전을 제외한 나머지는 반드시 태그명을 명시해야 한다.
+$ docker image rm ubuntu
+Error: No such image: ubuntu
+
+$ docker image rm ubuntu:14.04
+Untagged: ubuntu:14.04
+
+# 이미지 ID를 이용한 이미지 삭제, 현재 다른 태그 참조로 인한 오류 발생.
+$ docker image rm c18831e834fc
+Error response from daemon: conflict: unable to delete c18831e834fc (must be forced) - image is referenced in multiple repositories
+
+# 태그가 지정된 모든 httpd 관련 이미지 모두 삭제 (-f 옵션 이용)
+$ docker image rm -f c18831e834fc (이미지ID 앞 글자 몇 자만 써도 삭제 가능)
+
+# 리눅스 셸 스크립트의 변수 활용 방식을 활용할 수 있다.
+# 이미지 전체 삭제
+$ docker rmi $(docker images -q)
+
+# 특정 이미지 이름이 포함된 것만 삭제
+$ docker rmi $(docker images | grep debian)
+
+# 반대로 특정 이미지 이름이 포함된 것만 제외하고 모두 삭제
+$ docker rmi $(docker images | grep -v centos)
+
+# 자주 사용하는 명령을 alias 로 적용하여 활용하면 편리하다
+$ vi .bashrc
+...
+
+# 상태가 exited 인 container 를 찾아서 모두 삭제
+alias cexrm='docker rm $(docker ps --filter 'status=exited' -a -q)'
+
+# 설정한 alias 를 적용하고 확인
+$ source .bashrc
+$ alias
+...
+```
+
+컨테이너가 실행 중인 이미지를 삭제한다면 다음과 같은 에러가 발생한다. 현재 참조중인 컨테이너가 있기 때문에 삭제되지 않는다는 메세지다.
+
+```
+$ docker rmi nginx
+Error response from daemon: conflict: unable to remove repository reference "nginx" (must force) - container d29fb919526d is using its referenced image 12ef77b9fab6
+```
+
+먼저 구동 중인 컨테이너를 stop 한 뒤 rm 을 통해 제거한 후 이미지 삭제가 가능하다.
+
+이미지는 컨테이너 구동을 위해 존재한다. 로컬에 다운로드한 이미지 중 하나 이상의 컨테이너가 연결 되지 않은 모든 이미지 제거를 위해 `docker image prune` 명령을 사용한다.
+
+`--filter` 옵션을 이용하면 특정 기간이나 이미지 라벨을 지정하여 제거 대상 이미지를 선별할 수 있다.
+
+```
+# -a 옵션을 이용하면 사용 중이 아닌 모든 이미지가 제거
+$ docker image prune -a
+WARNING! This will remove all images without at least one container associated to them.
+Are you sure you want to continue? [y/N] y
+Deleted Images:
+...
+
+# 사용 중이 아닌 48시간 이전(--filter)의 모든 이미지(-a)를 별도 확인 없이(-f) 제거
+$ docker image prune -a -f --filter 'until=48h'
+```
+
+여기까지 도커 이미지와 관련된 명령에 대해 알아봤다.
+
+이제 이미지를 참조해서 애플리케이션 서비스로 동작시킬 수 있는 컨테이너에 대해 알아본다.
+
+<br>
